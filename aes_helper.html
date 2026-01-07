@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AES 加密/解密工具</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+        }
+
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+            padding: 40px;
+            max-width: 800px;
+            width: 100%;
+        }
+
+        h1 {
+            text-align: center;
+            color: #333;
+            margin-bottom: 30px;
+            font-size: 32px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            flex: 1;
+            padding: 15px;
+            text-align: center;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            color: #666;
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab:hover {
+            color: #667eea;
+            background: #f5f5f5;
+        }
+
+        .tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #555;
+            font-weight: 600;
+            font-size: 14px;
+        }
+
+        input[type="text"],
+        textarea {
+            width: 100%;
+            padding: 12px 15px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            font-family: 'Courier New', monospace;
+            transition: border-color 0.3s;
+        }
+
+        input[type="text"]:focus,
+        textarea:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+
+        textarea {
+            resize: vertical;
+            min-height: 100px;
+        }
+
+        .button-group {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        button {
+            flex: 1;
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .btn-secondary {
+            background: #f5f5f5;
+            color: #666;
+        }
+
+        .btn-secondary:hover {
+            background: #e0e0e0;
+        }
+
+        .result {
+            margin-top: 25px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+
+        .result label {
+            color: #333;
+            margin-bottom: 10px;
+        }
+
+        .result textarea {
+            background: white;
+            border-color: #d0d0d0;
+        }
+
+        .info {
+            margin-top: 20px;
+            padding: 15px;
+            background: #e3f2fd;
+            border-radius: 8px;
+            font-size: 13px;
+            color: #1976d2;
+        }
+
+        .copy-btn {
+            position: absolute;
+            right: 10px;
+            top: 40px;
+            padding: 5px 15px;
+            font-size: 12px;
+        }
+
+        .result-wrapper {
+            position: relative;
+        }
+
+        .toast {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4caf50;
+            color: white;
+            padding: 12px 24px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            opacity: 0;
+            transform: translateY(-20px);
+            transition: all 0.3s;
+            z-index: 1000;
+        }
+
+        .toast.show {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>AES 加密/解密工具</h1>
+
+        <div class="tabs">
+            <div class="tab active" data-tab="encrypt">加密</div>
+            <div class="tab" data-tab="decrypt">解密</div>
+        </div>
+
+        <!-- 加密面板 -->
+        <div class="tab-content active" id="encrypt">
+            <div class="form-group">
+                <label for="enc-plaintext">明文</label>
+                <textarea id="enc-plaintext" placeholder="输入要加密的内容"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="enc-key">密钥 (Key) - 16字节</label>
+                <input type="text" id="enc-key" value="844dd1be967b6e9e" placeholder="输入16字节密钥">
+            </div>
+
+            <div class="form-group">
+                <label for="enc-iv">初始化向量 (IV) - 16字节</label>
+                <input type="text" id="enc-iv" value="cdb421d038104126" placeholder="输入16字节IV">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="doEncrypt()">加密</button>
+                <button class="btn-secondary" onclick="clearEncrypt()">清空</button>
+            </div>
+
+            <div class="result" id="enc-result" style="display: none;">
+                <label>加密结果 (Base64)</label>
+                <div class="result-wrapper">
+                    <textarea id="enc-output" readonly></textarea>
+                    <button class="btn-primary copy-btn" onclick="copyToClipboard('enc-output')">复制</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- 解密面板 -->
+        <div class="tab-content" id="decrypt">
+            <div class="form-group">
+                <label for="dec-ciphertext">密文 (Base64)</label>
+                <textarea id="dec-ciphertext" placeholder="输入要解密的Base64密文"></textarea>
+            </div>
+
+            <div class="form-group">
+                <label for="dec-key">密钥 (Key) - 16字节</label>
+                <input type="text" id="dec-key" value="844dd1be967b6e9e" placeholder="输入16字节密钥">
+            </div>
+
+            <div class="form-group">
+                <label for="dec-iv">初始化向量 (IV) - 16字节</label>
+                <input type="text" id="dec-iv" value="cdb421d038104126" placeholder="输入16字节IV">
+            </div>
+
+            <div class="button-group">
+                <button class="btn-primary" onclick="doDecrypt()">解密</button>
+                <button class="btn-secondary" onclick="clearDecrypt()">清空</button>
+            </div>
+
+            <div class="result" id="dec-result" style="display: none;">
+                <label>解密结果</label>
+                <div class="result-wrapper">
+                    <textarea id="dec-output" readonly></textarea>
+                    <button class="btn-primary copy-btn" onclick="copyToClipboard('dec-output')">复制</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="info">
+            <strong>说明：</strong>
+            <ul style="margin-left: 20px; margin-top: 10px;">
+                <li>加密算法：AES-CBC 模式</li>
+                <li>填充方式：PKCS7</li>
+                <li>输出编码：Base64</li>
+                <li>密钥和IV必须是16字节（32个十六进制字符）</li>
+            </ul>
+        </div>
+    </div>
+
+    <div class="toast" id="toast"></div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/crypto-js/4.1.1/crypto-js.min.js"></script>
+    <script>
+        // 标签切换
+        document.querySelectorAll('.tab').forEach(tab => {
+            tab.addEventListener('click', function() {
+                document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+                document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+                this.classList.add('active');
+                document.getElementById(this.dataset.tab).classList.add('active');
+            });
+        });
+
+        // PKCS7 填充
+        function pad(data) {
+            const paddingLen = 16 - (data.length % 16);
+            const padding = String.fromCharCode(paddingLen).repeat(paddingLen);
+            return data + padding;
+        }
+
+        // 去除填充
+        function unpad(data) {
+            const paddingLen = data.charCodeAt(data.length - 1);
+            return data.substring(0, data.length - paddingLen);
+        }
+
+        // 加密函数
+        function doEncrypt() {
+            const plaintext = document.getElementById('enc-plaintext').value;
+            const key = document.getElementById('enc-key').value;
+            const iv = document.getElementById('enc-iv').value;
+
+            if (!plaintext) {
+                showToast('请输入要加密的内容', 'error');
+                return;
+            }
+
+            if (!key || key.length !== 16) {
+                showToast('密钥必须是16字节', 'error');
+                return;
+            }
+
+            if (!iv || iv.length !== 16) {
+                showToast('IV必须是16字节', 'error');
+                return;
+            }
+
+            try {
+                const keyHex = CryptoJS.enc.Utf8.parse(key);
+                const ivHex = CryptoJS.enc.Utf8.parse(iv);
+                const encrypted = CryptoJS.AES.encrypt(plaintext, keyHex, {
+                    iv: ivHex,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+
+                document.getElementById('enc-output').value = encrypted.toString();
+                document.getElementById('enc-result').style.display = 'block';
+                showToast('加密成功！');
+            } catch (e) {
+                showToast('加密失败：' + e.message, 'error');
+            }
+        }
+
+        // 解密函数
+        function doDecrypt() {
+            const ciphertext = document.getElementById('dec-ciphertext').value;
+            const key = document.getElementById('dec-key').value;
+            const iv = document.getElementById('dec-iv').value;
+
+            if (!ciphertext) {
+                showToast('请输入要解密的密文', 'error');
+                return;
+            }
+
+            if (!key || key.length !== 16) {
+                showToast('密钥必须是16字节', 'error');
+                return;
+            }
+
+            if (!iv || iv.length !== 16) {
+                showToast('IV必须是16字节', 'error');
+                return;
+            }
+
+            try {
+                const keyHex = CryptoJS.enc.Utf8.parse(key);
+                const ivHex = CryptoJS.enc.Utf8.parse(iv);
+                const decrypted = CryptoJS.AES.decrypt(ciphertext, keyHex, {
+                    iv: ivHex,
+                    mode: CryptoJS.mode.CBC,
+                    padding: CryptoJS.pad.Pkcs7
+                });
+
+                const plaintext = decrypted.toString(CryptoJS.enc.Utf8);
+
+                if (!plaintext) {
+                    showToast('解密失败，请检查密钥和IV是否正确', 'error');
+                    return;
+                }
+
+                document.getElementById('dec-output').value = plaintext;
+                document.getElementById('dec-result').style.display = 'block';
+                showToast('解密成功！');
+            } catch (e) {
+                showToast('解密失败：' + e.message, 'error');
+            }
+        }
+
+        // 清空加密面板
+        function clearEncrypt() {
+            document.getElementById('enc-plaintext').value = '';
+            document.getElementById('enc-result').style.display = 'none';
+        }
+
+        // 清空解密面板
+        function clearDecrypt() {
+            document.getElementById('dec-ciphertext').value = '';
+            document.getElementById('dec-result').style.display = 'none';
+        }
+
+        // 复制到剪贴板
+        function copyToClipboard(elementId) {
+            const textarea = document.getElementById(elementId);
+            textarea.select();
+            document.execCommand('copy');
+            showToast('已复制到剪贴板！');
+        }
+
+        // 显示提示
+        function showToast(message, type = 'success') {
+            const toast = document.getElementById('toast');
+            toast.textContent = message;
+            toast.style.background = type === 'error' ? '#f44336' : '#4caf50';
+            toast.classList.add('show');
+
+            setTimeout(() => {
+                toast.classList.remove('show');
+            }, 3000);
+        }
+    </script>
+</body>
+</html>

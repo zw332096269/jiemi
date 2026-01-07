@@ -1,0 +1,141 @@
+name: Build Android APK
+
+on:
+  push:
+    branches: [ main, master ]
+  pull_request:
+    branches: [ main, master ]
+  workflow_dispatch:  # 允许手动触发
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: 检出代码
+      uses: actions/checkout@v4
+
+    - name: 设置 Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.9'
+
+    - name: 安装系统依赖
+      run: |
+        sudo apt-get update
+        sudo apt-get install -y \
+          git \
+          zip \
+          unzip \
+          openjdk-17-jdk \
+          autoconf \
+          libtool \
+          pkg-config \
+          zlib1g-dev \
+          libncurses5-dev \
+          libncursesw5-dev \
+          libtinfo5 \
+          cmake \
+          libffi-dev \
+          libssl-dev \
+          build-essential \
+          python3 \
+          python3-pip \
+          python3-setuptools \
+          python3-wheel \
+          libsdl2-dev \
+          libsdl2-image-dev \
+          libsdl2-mixer-dev \
+          libsdl2-ttf-dev \
+          libportmidi-dev \
+          libswscale-dev \
+          libavformat-dev \
+          libavcodec-dev
+
+    - name: 缓存 Buildozer 依赖
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/.buildozer
+          buildozer
+        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
+        restore-keys: |
+          ${{ runner.os }}-buildozer-
+
+    - name: 安装 Buildozer
+      run: |
+        pip3 install --upgrade pip
+        pip3 install buildozer cython
+
+    - name: 安装 Python 依赖
+      run: |
+        pip3 install kivy pyaes
+
+    - name: 显示 Buildozer 版本
+      run: |
+        buildozer version
+        python3 --version
+
+    - name: 初始化 Buildozer
+      run: |
+        buildozer init --verbose
+      continue-on-error: true
+
+    - name: 下载 Android SDK 和 NDK
+      run: |
+        buildozer android download_sdk --verbose
+      continue-on-error: true
+
+    - name: 构建 Debug APK
+      run: |
+        buildozer -v android debug
+      env:
+        BUILDOZER_WARN_ON_ROOT: 0
+
+    - name: 查找生成的 APK
+      run: |
+        find . -name "*.apk" -type f
+      continue-on-error: true
+
+    - name: 准备 APK 文件
+      run: |
+        mkdir -p release
+        if [ -f bin/*.apk ]; then
+          cp bin/*.apk release/ 2>/dev/null || true
+        fi
+        if [ -f .buildozer/android/platform/build/dists/*.apk ]; then
+          cp .buildozer/android/platform/build/dists/*.apk release/ 2>/dev/null || true
+        fi
+        ls -lh release/ || echo "No APK found"
+
+    - name: 上传 APK 文件
+      uses: actions/upload-artifact@v4
+      with:
+        name: aes-helper-apk
+        path: release/*.apk
+        retention-days: 30
+
+    - name: 构建总结
+      if: success()
+      run: |
+        echo "## ✅ APK 构建成功！" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📦 下载方式" >> $GITHUB_STEP_SUMMARY
+        echo "1. 在本页面下方找到 'Artifacts' 部分" >> $GITHUB_STEP_SUMMARY
+        echo "2. 下载 'aes-helper-apk' 文件" >> $GITHUB_STEP_SUMMARY
+        echo "3. 解压后获得 .apk 文件" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "### 📱 安装方法" >> $GITHUB_STEP_SUMMARY
+        echo "- 将 APK 传输到 Android 设备" >> $GITHUB_STEP_SUMMARY
+        echo "- 允许安装'未知来源'应用" >> $GITHUB_STEP_SUMMARY
+        echo "- 打开 APK 文件进行安装" >> $GITHUB_STEP_SUMMARY
+
+    - name: 构建失败帮助
+      if: failure()
+      run: |
+        echo "## ❌ 构建失败" >> $GITHUB_STEP_SUMMARY
+        echo "" >> $GITHUB_STEP_SUMMARY
+        echo "请检查：" >> $GITHUB_STEP_SUMMARY
+        echo "1. buildozer.spec 配置是否正确" >> $GITHUB_STEP_SUMMARY
+        echo "2. 查看详细日志了解错误原因" >> $GITHUB_STEP_SUMMARY
+        echo "3. 检查 main.py 是否存在且正确" >> $GITHUB_STEP_SUMMARY

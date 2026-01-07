@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(buildozer:*)",
+      "Bash(wsl:*)",
+      "Bash(where:*)",
+      "Bash(systeminfo:*)",
+      "Bash(findstr:*)",
+      "Bash(ver:*)",
+      "Bash(test:*)",
+      "Bash(cat:*)"
+    ]
+  }
+}

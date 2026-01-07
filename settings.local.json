@@ -1,0 +1,29 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(mkdir:*)",
+      "Bash(dir:*)",
+      "WebSearch",
+      "Bash(start studio64.exe:*)",
+      "Bash(where:*)",
+      "Bash(powershell:*)",
+      "Bash(keytool:*)",
+      "Bash(start \"\" \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\bin\\\\studio64.exe\")",
+      "Bash(start \"\" \"C:\\\\Users\\\\Administrator\\\\Desktop\\\\installer_r24.4.1-windows.exe\")",
+      "Bash(java:*)",
+      "Bash(setx:*)",
+      "Bash(\"C:\\\\Users\\\\Administrator\\\\AppData\\\\Local\\\\Android\\\\android-sdk\\\\tools\\\\android.bat\" list sdk)",
+      "Bash(gradle:*)",
+      "Bash(echo:*)",
+      "Bash(bitsadmin:*)",
+      "Bash(curl:*)",
+      "Bash(winget install:*)",
+      "Bash(start \"\" \"C:\\\\Program Files\\\\Android\\\\Android Studio\\\\bin\\\\studio64.exe\" \"D:\\\\解密\\\\jiemi\")",
+      "Bash(if not exist \"%USERPROFILE%\\\\.gradle\" mkdir \"%USERPROFILE%\\\\.gradle\")",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(robocopy:*)",
+      "Bash(xcopy:*)"
+    ]
+  }
+}
