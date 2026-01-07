@@ -12,15 +12,15 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-    - name: 检出代码
+    - name: Checkout code
       uses: actions/checkout@v4
 
-    - name: 设置 Python
+    - name: Setup Python
       uses: actions/setup-python@v5
       with:
         python-version: '3.9'
 
-    - name: 安装系统依赖
+    - name: Install system dependencies
       run: |
         sudo apt-get update
         sudo apt-get install -y \
@@ -52,7 +52,7 @@ jobs:
           libavformat-dev \
           libavcodec-dev
 
-    - name: 缓存 Buildozer 依赖
+    - name: Cache Buildozer dependencies
       uses: actions/cache@v4
       with:
         path: |
@@ -62,42 +62,42 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-buildozer-
 
-    - name: 安装 Buildozer
+    - name: Install Buildozer
       run: |
         pip3 install --upgrade pip
         pip3 install buildozer cython
 
-    - name: 安装 Python 依赖
+    - name: Install Python dependencies
       run: |
         pip3 install kivy pyaes
 
-    - name: 显示 Buildozer 版本
+    - name: Show Buildozer version
       run: |
         buildozer version
         python3 --version
 
-    - name: 初始化 Buildozer
+    - name: 验证 Buildozer 配置
       run: |
-        buildozer init --verbose
-      continue-on-error: true
+        echo "Checking buildozer.spec..."
+        test -f buildozer.spec && echo "buildozer.spec found" || exit 1
 
-    - name: 下载 Android SDK 和 NDK
+    - name: Download Android SDK and NDK
       run: |
         buildozer android download_sdk --verbose
       continue-on-error: true
 
-    - name: 构建 Debug APK
+    - name: Build Debug APK
       run: |
         buildozer -v android debug
       env:
         BUILDOZER_WARN_ON_ROOT: 0
 
-    - name: 查找生成的 APK
+    - name: Find generated APK
       run: |
         find . -name "*.apk" -type f
       continue-on-error: true
 
-    - name: 准备 APK 文件
+    - name: Prepare APK files
       run: |
         mkdir -p release
         if [ -f bin/*.apk ]; then
@@ -108,34 +108,34 @@ jobs:
         fi
         ls -lh release/ || echo "No APK found"
 
-    - name: 上传 APK 文件
+    - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
       with:
         name: aes-helper-apk
         path: release/*.apk
         retention-days: 30
 
-    - name: 构建总结
+    - name: Build summary
       if: success()
       run: |
-        echo "## ✅ APK 构建成功！" >> $GITHUB_STEP_SUMMARY
+        echo "## APK Build Successful!" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📦 下载方式" >> $GITHUB_STEP_SUMMARY
-        echo "1. 在本页面下方找到 'Artifacts' 部分" >> $GITHUB_STEP_SUMMARY
-        echo "2. 下载 'aes-helper-apk' 文件" >> $GITHUB_STEP_SUMMARY
-        echo "3. 解压后获得 .apk 文件" >> $GITHUB_STEP_SUMMARY
+        echo "### Download Instructions" >> $GITHUB_STEP_SUMMARY
+        echo "1. Find 'Artifacts' section at the bottom of this page" >> $GITHUB_STEP_SUMMARY
+        echo "2. Download 'aes-helper-apk' file" >> $GITHUB_STEP_SUMMARY
+        echo "3. Extract to get .apk file" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### 📱 安装方法" >> $GITHUB_STEP_SUMMARY
-        echo "- 将 APK 传输到 Android 设备" >> $GITHUB_STEP_SUMMARY
-        echo "- 允许安装'未知来源'应用" >> $GITHUB_STEP_SUMMARY
-        echo "- 打开 APK 文件进行安装" >> $GITHUB_STEP_SUMMARY
+        echo "### Installation" >> $GITHUB_STEP_SUMMARY
+        echo "- Transfer APK to Android device" >> $GITHUB_STEP_SUMMARY
+        echo "- Allow installation from 'Unknown Sources'" >> $GITHUB_STEP_SUMMARY
+        echo "- Open APK file to install" >> $GITHUB_STEP_SUMMARY
 
-    - name: 构建失败帮助
+    - name: Build failure help
       if: failure()
       run: |
-        echo "## ❌ 构建失败" >> $GITHUB_STEP_SUMMARY
+        echo "## Build Failed" >> $GITHUB_STEP_SUMMARY
         echo "" >> $GITHUB_STEP_SUMMARY
-        echo "请检查：" >> $GITHUB_STEP_SUMMARY
-        echo "1. buildozer.spec 配置是否正确" >> $GITHUB_STEP_SUMMARY
-        echo "2. 查看详细日志了解错误原因" >> $GITHUB_STEP_SUMMARY
-        echo "3. 检查 main.py 是否存在且正确" >> $GITHUB_STEP_SUMMARY
+        echo "Please check:" >> $GITHUB_STEP_SUMMARY
+        echo "1. buildozer.spec configuration is correct" >> $GITHUB_STEP_SUMMARY
+        echo "2. View detailed logs for error details" >> $GITHUB_STEP_SUMMARY
+        echo "3. main.py exists and is correct" >> $GITHUB_STEP_SUMMARY
