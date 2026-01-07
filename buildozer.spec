@@ -1,7 +1,7 @@
 [app]
 
 # (str) Title of your application
-title = AES加密解密工具
+title = AES Encryption Tool
 
 # (str) Package name
 package.name = jiemi
@@ -19,7 +19,7 @@ source.include_exts = py,png,jpg,kv,atlas,json,html
 version = 1.0.0
 
 # (list) Application requirements
-requirements = python3,kivy,pyaes,crypto
+requirements = python3,kivy,pyaes
 
 # (str) Presplash of the application
 #presplash.filename = %(source.dir)s/data/presplash.png
@@ -57,7 +57,7 @@ android.api = 33
 android.minapi = 24
 
 # (int) Android NDK version to use
-android.ndk = 25b
+android.ndk = 25.2.9519653
 
 # (int) Android SDK version to use
 android.sdk = 33
