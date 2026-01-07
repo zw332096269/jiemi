@@ -5,7 +5,7 @@ on:
     branches: [ main, master ]
   pull_request:
     branches: [ main, master ]
-  workflow_dispatch:  # 允许手动触发
+  workflow_dispatch:
 
 jobs:
   build:
@@ -18,7 +18,7 @@ jobs:
     - name: Setup Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.9'
+        python-version: '3.10'
 
     - name: Install system dependencies
       run: |
@@ -50,92 +50,42 @@ jobs:
           libportmidi-dev \
           libswscale-dev \
           libavformat-dev \
-          libavcodec-dev
-
-    - name: Cache Buildozer dependencies
-      uses: actions/cache@v4
-      with:
-        path: |
-          ~/.buildozer
-          buildozer
-        key: ${{ runner.os }}-buildozer-${{ hashFiles('buildozer.spec') }}
-        restore-keys: |
-          ${{ runner.os }}-buildozer-
+          libavcodec-dev \
+          automake \
+          libltdl-dev
 
     - name: Install Buildozer
       run: |
         pip3 install --upgrade pip
-        pip3 install buildozer cython
-
-    - name: Install Python dependencies
-      run: |
-        pip3 install kivy pyaes
+        pip3 install buildozer==1.5.1 cython==0.29.36
 
     - name: Show Buildozer version
       run: |
         buildozer version
         python3 --version
 
-    - name: 验证 Buildozer 配置
-      run: |
-        echo "Checking buildozer.spec..."
-        test -f buildozer.spec && echo "buildozer.spec found" || exit 1
-
-    - name: Download Android SDK and NDK
-      run: |
-        buildozer android download_sdk --verbose
-      continue-on-error: true
-
     - name: Build Debug APK
       run: |
-        buildozer -v android debug
+        buildozer android debug
       env:
         BUILDOZER_WARN_ON_ROOT: 0
 
-    - name: Find generated APK
+    - name: Find APK
       run: |
-        find . -name "*.apk" -type f
-      continue-on-error: true
-
-    - name: Prepare APK files
-      run: |
+        echo "Searching for APK files..."
+        find . -name "*.apk" -type f -ls
         mkdir -p release
-        if [ -f bin/*.apk ]; then
-          cp bin/*.apk release/ 2>/dev/null || true
-        fi
-        if [ -f .buildozer/android/platform/build/dists/*.apk ]; then
-          cp .buildozer/android/platform/build/dists/*.apk release/ 2>/dev/null || true
-        fi
-        ls -lh release/ || echo "No APK found"
+        cp .buildozer/android/platform/build/dists/*/bin/*.apk release/ 2>/dev/null || \
+        cp bin/*.apk release/ 2>/dev/null || \
+        echo "Copying from alternative location..."
+        find . -name "*.apk" -exec cp {} release/ \;
+        ls -lh release/
 
     - name: Upload APK artifacts
       uses: actions/upload-artifact@v4
+      if: success()
       with:
         name: aes-helper-apk
         path: release/*.apk
         retention-days: 30
-
-    - name: Build summary
-      if: success()
-      run: |
-        echo "## APK Build Successful!" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Download Instructions" >> $GITHUB_STEP_SUMMARY
-        echo "1. Find 'Artifacts' section at the bottom of this page" >> $GITHUB_STEP_SUMMARY
-        echo "2. Download 'aes-helper-apk' file" >> $GITHUB_STEP_SUMMARY
-        echo "3. Extract to get .apk file" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "### Installation" >> $GITHUB_STEP_SUMMARY
-        echo "- Transfer APK to Android device" >> $GITHUB_STEP_SUMMARY
-        echo "- Allow installation from 'Unknown Sources'" >> $GITHUB_STEP_SUMMARY
-        echo "- Open APK file to install" >> $GITHUB_STEP_SUMMARY
-
-    - name: Build failure help
-      if: failure()
-      run: |
-        echo "## Build Failed" >> $GITHUB_STEP_SUMMARY
-        echo "" >> $GITHUB_STEP_SUMMARY
-        echo "Please check:" >> $GITHUB_STEP_SUMMARY
-        echo "1. buildozer.spec configuration is correct" >> $GITHUB_STEP_SUMMARY
-        echo "2. View detailed logs for error details" >> $GITHUB_STEP_SUMMARY
-        echo "3. main.py exists and is correct" >> $GITHUB_STEP_SUMMARY
+        if-no-files-found: warn
